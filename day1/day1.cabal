@@ -4,11 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c3fabbd24f426cbb7371f3458f14e22a69d0eabe3eed0d76443ef4f203e04661
+-- hash: a2b873516973842ba9f40f416dd5ca7743e048cb62d8d8792cdf0ec9e35fd66c
 
 name:           day1
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/githubuser/day1#readme>
 homepage:       https://github.com/githubuser/day1#readme
 bug-reports:    https://github.com/githubuser/day1/issues
 author:         Thomas Whiteway
@@ -17,9 +16,6 @@ copyright:      2020 Thomas Whiteway
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
-extra-source-files:
-    README.md
-    ChangeLog.md
 
 source-repository head
   type: git
@@ -35,4 +31,5 @@ executable day1-exe
   build-depends:
       base >=4.7 && <5
     , containers
+    , extra
   default-language: Haskell2010
