@@ -9,10 +9,11 @@ data Rule = Rule {
     character :: Char
 } 
 
+xor :: Bool -> Bool -> Bool
+xor a b = a /= b
+
 satisfies :: Rule -> String -> Bool
-satisfies Rule { lower, upper, character } password = appearances >= lower && appearances <= upper
-    where
-        appearances = count (==character) password
+satisfies Rule { lower, upper, character } password = ((password !! (lower - 1)) == character) `xor` ((password !! (upper - 1)) == character)
 
 range = do
     lower <- many digit 
