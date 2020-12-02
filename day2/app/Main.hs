@@ -2,6 +2,7 @@ module Main where
 
 import Text.Parsec (many, digit, char, anyChar, string, parse, ParsecT);
 import Util (count);
+import Data.Either (fromRight);
 
 data Rule = Rule { 
     lower :: Int,
@@ -35,15 +36,10 @@ entry = do
     p <- password
     return (r, p)
 
-
-
 solve :: String -> Bool
 solve line = satisfies r p
     where 
-        (r, p) = case parse entry "" line of
-            Left err -> error "Failed to parse entry"
-            Right (r, p) -> (r, p)
-
+        (r, p) = fromRight (error "Failed to parse entry") $ parse entry "" line 
 
 main :: IO ()
 main = interact (show . count id . map solve . lines)
