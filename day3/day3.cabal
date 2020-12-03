@@ -1,0 +1,32 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 0b22e2d5abf96bc29bbf1bed909e4926703743b12a2c55913c1493cc89bd8366
+
+name:           day3
+version:        0.1.0.0
+homepage:       https://github.com/githubuser/day3#readme
+bug-reports:    https://github.com/githubuser/day3/issues
+author:         Thomas Whiteway
+maintainer:     thomas.whiteway@gmail.com
+copyright:      2020 Thomas Whiteway
+license:        BSD3
+build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/githubuser/day3
+
+executable day3-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_day3
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+  default-language: Haskell2010
