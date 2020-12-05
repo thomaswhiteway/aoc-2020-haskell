@@ -1,5 +1,7 @@
 module Main where
 
+import Data.List (sort);
+
 type BoardingPass = (Int, Int)
 
 parseSection :: Char -> Int -> Int -> String -> Int
@@ -22,5 +24,10 @@ parseBoardingPass text = (parseSection 'F' 0 128 rowtext,
 getId :: BoardingPass -> Int
 getId (row, column) = row * 8 + column
 
+findMissing :: [Int] -> Int
+findMissing (x:y:rest) 
+    | y == x+1  = findMissing (y:rest)
+    | otherwise = x+1
+
 main :: IO ()
-main = interact (show . maximum . map (getId . parseBoardingPass) . lines)
+main = interact (show . findMissing . sort . map (getId . parseBoardingPass) . lines)
