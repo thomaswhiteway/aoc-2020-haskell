@@ -17,5 +17,8 @@ parseGroups text = case parse (groups <* eof) "" text of
 totalQuestions :: Group -> Int
 totalQuestions = IntSet.size . IntSet.fromList . map fromEnum . concat 
 
+commonQuestions :: Group -> Int
+commonQuestions = IntSet.size . foldl1 IntSet.intersection . map (IntSet.fromList . map fromEnum)
+
 main :: IO ()
-main = interact (show . sum . map totalQuestions . parseGroups)
+main = interact (show . sum . map commonQuestions . parseGroups)
