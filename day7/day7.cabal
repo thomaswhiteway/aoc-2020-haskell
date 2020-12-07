@@ -1,0 +1,34 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 5d3703a1ad406442db6f12da5b28d2f9289805ca370ba617184b14a4e0f12a30
+
+name:           day7
+version:        0.1.0.0
+homepage:       https://github.com/githubuser/day7#readme
+bug-reports:    https://github.com/githubuser/day7/issues
+author:         Thomas Whiteway
+maintainer:     thomas.whiteway@gmail.com
+copyright:      2020 Thomas Whiteway
+license:        BSD3
+build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/githubuser/day7
+
+executable day7-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_day7
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , containers
+    , parsec
+  default-language: Haskell2010
