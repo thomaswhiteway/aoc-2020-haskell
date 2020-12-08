@@ -1,8 +1,10 @@
 module Main where
 
-import Text.Parsec (parse, char, string, choice, try, many1, digit, oneOf, endBy, newline, eof, ParsecT)
+import Text.Parsec (parse, char, string, choice, try, many1, digit, endBy, newline, eof, ParsecT)
 import Data.Functor.Identity ( Identity )
 import qualified Data.IntSet as IntSet
+import Data.Maybe (fromJust)
+import Maybes (firstJusts)
 
 data Instruction = Nop Int | Acc Int | Jmp Int
 
@@ -46,16 +48,35 @@ execute (Nop _) (State pc acc) = State (pc+1) acc
 execute (Acc x) (State pc acc) = State (pc+1) (acc+x)
 execute (Jmp x) (State pc acc) = State (pc+x) acc
 
-step :: Program -> State -> State
-step prog state = execute (prog !! pc state) state
+step :: Program -> State -> Maybe State
+step prog state 
+    | pc state == length prog = Nothing
+    | otherwise               = Just $ execute (prog !! pc state) state
 
-solve :: Program -> Int
-solve prog = solve' IntSet.empty initialState
+run :: Program -> Maybe Int
+run prog = run' IntSet.empty initialState
     where 
         next = step prog
-        solve' seen state
-            | pc state `IntSet.member` seen = acc state
-            | otherwise               = solve' (pc state `IntSet.insert` seen) (next state)
+        run' seen state
+            | pc state `IntSet.member` seen = Nothing
+            | otherwise                     = case next state of 
+                Just newState -> run' (pc state `IntSet.insert` seen) newState
+                Nothing       -> Just $ acc state
+
+changes :: Program -> [Program]
+changes = changes' [] 
+    where 
+        changes' _ [] = []
+        changes' prefix (i:is) = case i of 
+            Nop x -> update (Jmp x):rest
+            Jmp x -> update (Nop x):rest
+            Acc _ -> rest
+            where
+                update i' = prefix ++ (i':is)
+                rest = changes' (prefix ++ [i]) is
+
+solve :: Program -> Int
+solve prog = fromJust $ firstJusts $ map run $ changes prog
 
 main :: IO ()
 main = interact (show . solve . parseProgram)
