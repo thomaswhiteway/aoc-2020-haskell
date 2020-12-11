@@ -17,6 +17,14 @@ instance Show Square where
 instance Show Grid where
     show Grid{width=w,height=h,squares=sqrs} = unlines $ [concat [ show $ sqrs ! (row*w+col) | col <- [0..w-1]] | row <- [0..h-1]]
 
+lookupLinear :: Grid -> Int -> Square
+lookupLinear grid i = squares grid ! i
+
+lookupGrid :: Grid -> (Int, Int) -> Maybe Square
+lookupGrid grid pos 
+    | within grid pos = Just $ lookupLinear grid $ gridToLinear grid pos
+    | otherwise       = Nothing
+
 within :: Grid -> (Int, Int) -> Bool
 within Grid{height=h, width=w} (x, y) = x >= 0 && x < w && y >= 0 && y < h
 
@@ -38,6 +46,18 @@ adjacentIndices grid i = [ gridToLinear grid (x', y') | (x', y') <- adjacentCoor
 adjacent :: Grid -> Int -> [Square]
 adjacent grid i = map (squares grid!) $ adjacentIndices grid i
 
+findVisible :: Grid -> (Int, Int) -> (Int, Int) -> Square
+findVisible grid (x, y) offset@(dx, dy) = case nextSquare of 
+    Nothing    -> Empty
+    Just Empty -> findVisible grid next offset
+    Just seat  -> seat
+    where
+        next = (x + dx, y + dy)
+        nextSquare = lookupGrid grid next 
+
+visible :: Grid -> Int -> [Square]
+visible grid i = map (findVisible grid $ linearToGrid grid i) adjacentOffsets
+
 count :: (a -> Bool) -> [a] -> Int
 count f = length . filter f
 
@@ -54,26 +74,34 @@ parse text = Grid { width = w, height = h, squares = sqrs }
         w = length $ head grid
         sqrs = Array.array (0, h*w-1) $ zip [0..] $ concat grid
 
-updateSquare :: Grid -> Int -> Square
-updateSquare grid i = case squares grid ! i of 
+updateSquareAdjacent :: Grid -> Int -> Square
+updateSquareAdjacent grid i = case lookupLinear grid i of 
     Empty -> Empty
     Seat False -> if numOccupiedAdjacent == 0 then Seat True else Seat False
     Seat True -> if numOccupiedAdjacent >= 4 then Seat False else Seat True
     where
         numOccupiedAdjacent = countOccupiedSeats $ adjacent grid i
 
-step :: Grid -> Grid
-step grid = grid { squares = squares grid // changes }
+updateSquareVisible :: Grid -> Int -> Square
+updateSquareVisible grid i = case lookupLinear grid i of 
+    Empty -> Empty
+    Seat False -> if numOccupiedVisible == 0 then Seat True else Seat False
+    Seat True -> if numOccupiedVisible >= 5 then Seat False else Seat True
+    where
+        numOccupiedVisible = countOccupiedSeats $ visible grid i
+
+step :: (Grid -> Int -> Square) ->  Grid -> Grid
+step update grid = grid { squares = squares grid // changes }
     where 
-        changes = zip indices $ map (updateSquare grid) indices
+        changes = zip indices $ map (update grid) indices
         indices = Array.indices $ squares grid
 
-stabilize :: Grid -> Grid
-stabilize grid 
+stabilize :: (Grid -> Int -> Square) -> Grid -> Grid
+stabilize update grid 
     | next == grid = grid
-    | otherwise    = stabilize next
+    | otherwise    = stabilize update next
     where
-        next = step grid
+        next = step update grid
 
 countOccupiedSeats :: [Square] -> Int
 countOccupiedSeats = count (==Seat True)
@@ -88,9 +116,15 @@ main = do
     putStrLn "----------"
     print grid
     putStrLn ""
-    let final = stabilize grid
-    putStrLn "End Grid"
-    putStrLn "--------"
-    print final
+    let finalAdjacent = stabilize updateSquareAdjacent grid
+    putStrLn "End Grid (Adjacent)"
+    putStrLn "-------------------"
+    print finalAdjacent
     putStrLn ""
-    putStrLn $ "Ended with " ++ show (occupiedSeats final) ++ " seats occupied"
+    let finalVisible = stabilize updateSquareVisible grid
+    putStrLn "End Grid (Visible)"
+    putStrLn "-------------------"
+    print finalVisible
+    putStrLn ""
+    putStrLn $ "Adjacent: Ended with " ++ show (occupiedSeats finalAdjacent) ++ " seats occupied"
+    putStrLn $ "Visible: Ended with " ++ show (occupiedSeats finalVisible) ++ " seats occupied"
