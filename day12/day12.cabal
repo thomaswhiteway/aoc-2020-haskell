@@ -1,0 +1,33 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 42ec37e7c3684aa75a7adaf72c045fed1b8530f132db571af030b3de8d9d166a
+
+name:           day12
+version:        0.1.0.0
+homepage:       https://github.com/githubuser/day12#readme
+bug-reports:    https://github.com/githubuser/day12/issues
+author:         Thomas Whiteway
+maintainer:     thomas.whiteway@gmail.com
+copyright:      2020 Thomas Whiteway
+license:        BSD3
+build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/githubuser/day12
+
+executable day12-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_day12
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , parsec
+  default-language: Haskell2010
