@@ -27,7 +27,7 @@ firstConsecutiveDepartures :: [(Int, Int)] -> Int
 firstConsecutiveDepartures = fst . foldr firstDepartureWithOffset (0, 1) 
 
 firstDepartureWithOffset :: (Int, Int) -> (Int, Int) -> (Int, Int)
-firstDepartureWithOffset (index, bus) (earliest, multiplier) = (t, multiplier * bus)
+firstDepartureWithOffset (index, bus) (earliest, multiplier) = (t, lcm multiplier bus)
     where
         t = fromJust $ 
             find (\t -> (t + index) `mod` bus == 0) $ 
