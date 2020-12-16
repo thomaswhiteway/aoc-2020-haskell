@@ -93,7 +93,7 @@ findFieldOrder fs =  map snd . sort <$> findFieldOrderWithIndex sortedFieldsWith
 findFieldOrderWithIndex :: [(Int, [String])] -> Maybe [(Int, String)]
 findFieldOrderWithIndex []        = Just []
 findFieldOrderWithIndex ((i, fs):rest) = msum [     
-        ((i,f):) <$> findFieldOrderWithIndex (rest `without` f) | f <- fs
+        ((i,f):) <$> findFieldOrderWithIndex (sortOn (length . snd) (rest `without` f)) | f <- fs
     ]
 
 main :: IO ()
