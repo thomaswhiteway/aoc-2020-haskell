@@ -2,7 +2,7 @@ module Main where
 
 import Text.Parsec ( ParsecT, parse, char, digit, many1, sepBy1, string, newline, endBy, letter, eof, (<|>) )
 import Data.Functor.Identity ( Identity )
-import Data.List ( transpose, isPrefixOf, sort, sortBy )
+import Data.List ( transpose, isPrefixOf, sort, sortOn )
 import Control.Monad (msum)
 import Data.Bifunctor ( Bifunctor(second) )
 
@@ -85,15 +85,16 @@ without :: [(Int, [String])] -> String -> [(Int, [String])]
 without fs name = map (second $ filter (/=name)) fs
 
 findFieldOrder :: [[String]] -> Maybe [String]
-findFieldOrder fs =  (\order -> [name | (_, name) <- sort order]) <$> findFieldOrder' fs'
+findFieldOrder fs =  map snd . sort <$> findFieldOrderWithIndex sortedFieldsWithIndex
     where       
-        fs' :: [(Int, [String])]
-        fs' = sortBy (\(_, f1) (_, f2) -> compare (length f1) (length f2)) $ zip [0..] fs
-        findFieldOrder' :: [(Int, [String])] -> Maybe [(Int, String)]
-        findFieldOrder' []        = Just []
-        findFieldOrder' ((i, fs):rest) = msum [     
-                ((i,f):) <$> findFieldOrder' (rest `without` f) | f <- fs
-            ]
+        sortedFieldsWithIndex :: [(Int, [String])]
+        sortedFieldsWithIndex = sortOn (length . snd) $ zip [0..] fs
+
+findFieldOrderWithIndex :: [(Int, [String])] -> Maybe [(Int, String)]
+findFieldOrderWithIndex []        = Just []
+findFieldOrderWithIndex ((i, fs):rest) = msum [     
+        ((i,f):) <$> findFieldOrderWithIndex (rest `without` f) | f <- fs
+    ]
 
 main :: IO ()
 main = do
