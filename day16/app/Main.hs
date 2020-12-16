@@ -1,13 +1,19 @@
 module Main where
 
-import Text.Parsec ( ParsecT, parse, char, digit, many1, sepBy, string, newline, endBy, letter, eof, (<|>) )
+import Text.Parsec ( ParsecT, parse, char, digit, many1, sepBy1, string, newline, endBy, letter, eof, (<|>) )
 import Data.Functor.Identity ( Identity )
+import Data.List ( transpose, isPrefixOf, sort, sortBy )
+import Control.Monad (msum)
+import Data.Bifunctor ( Bifunctor(second) )
 
 data Field = Field String [(Int, Int)] deriving (Eq, Show)
 type Ticket = [Int]
 
+fieldName :: Field -> String
+fieldName (Field name _) = name
+
 ticket :: ParsecT String u Identity [Int]
-ticket = fmap read (many1 digit) `sepBy` char ','
+ticket = fmap read (many1 digit) `sepBy1` char ','
 
 range :: ParsecT String u Identity (Int, Int)
 range = do
@@ -20,7 +26,7 @@ field :: ParsecT String u Identity Field
 field = do
     name <- many1 (letter <|> char ' ')
     string ": "
-    ranges <- range `sepBy` string " or "
+    ranges <- range `sepBy1` string " or "
     return $ Field name ranges
 
 fields :: ParsecT String u Identity [Field]
@@ -56,17 +62,54 @@ inRange v (low, high) = low <= v && v <= high
 valueValid :: Int -> Field -> Bool
 valueValid v (Field _ rs) = any (inRange v) rs
 
-validFields :: Int -> [Field] -> [Field]
-validFields v = filter $ valueValid v
+fieldsValidForValue :: Int -> [Field] -> [Field]
+fieldsValidForValue v = filter $ valueValid v
+
+fieldsValidForValues :: [Int] -> [Field] -> [Field]
+fieldsValidForValues []     fs = fs
+fieldsValidForValues _      [] = []
+fieldsValidForValues (v:vs) fs = fieldsValidForValues vs fs'
+    where 
+        fs' = fieldsValidForValue v fs
 
 canBeValid :: [Field] -> Int -> Bool
-canBeValid fs v = validFields v fs /= []
+canBeValid fs v = fieldsValidForValue v fs /= []
+
+ticketCanBeValid :: [Field] -> Ticket -> Bool
+ticketCanBeValid fs t = null $ invalidValues fs t
 
 invalidValues :: [Field] -> Ticket -> [Int]
 invalidValues fs = filter $ not . canBeValid fs
+
+without :: [(Int, [String])] -> String -> [(Int, [String])]
+without fs name = map (second $ filter (/=name)) fs
+
+findFieldOrder :: [[String]] -> Maybe [String]
+findFieldOrder fs =  (\order -> [name | (_, name) <- sort order]) <$> findFieldOrder' fs'
+    where       
+        fs' :: [(Int, [String])]
+        fs' = sortBy (\(_, f1) (_, f2) -> compare (length f1) (length f2)) $ zip [0..] fs
+        findFieldOrder' :: [(Int, [String])] -> Maybe [(Int, String)]
+        findFieldOrder' []        = Just []
+        findFieldOrder' ((i, fs):rest) = msum [     
+                ((i,f):) <$> findFieldOrder' (rest `without` f) | f <- fs
+            ]
 
 main :: IO ()
 main = do
     (fs, t, ts) <- fmap parseInput getContents 
     let vs = concatMap (invalidValues fs) ts
     putStrLn $ "Ticket scanning error rate is " ++ show (sum vs)
+    let validTickets = filter (ticketCanBeValid fs) ts
+    let fieldValues = transpose validTickets
+    let fieldsForPosition = [map fieldName $ fieldsValidForValues vs fs | vs <- fieldValues]
+    case findFieldOrder fieldsForPosition of
+        Nothing -> putStrLn "No Solution"
+        Just fieldOrder -> do
+            mapM_ putStrLn fieldOrder
+            let result = product [ val | (name, val) <- zip fieldOrder t, "departure" `isPrefixOf` name]
+            putStrLn $ "Result is " ++ show result
+
+
+
+
