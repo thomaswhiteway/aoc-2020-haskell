@@ -16,11 +16,11 @@ parseState text = HashSet.fromList [Cube3D (x, y, 0) | (y, line) <- zip [0..] (l
                                                        (x, c) <- zip [0..] line,
                                                        c == '#']
 
-class (Eq c, Hashable c) => Cube c where
-    neighbours :: c -> HashSet c
+class Cube c where
+    neighbours :: c -> [c]
 
 instance Cube Cube3D where
-    neighbours (Cube3D (x, y, z)) = HashSet.fromList [
+    neighbours (Cube3D (x, y, z)) =  [
             Cube3D (x+dx, y+dy, z+dz) | dx <- [-1, 0, 1],
                                         dy <- [-1, 0, 1],
                                         dz <- [-1, 0, 1],
@@ -28,7 +28,7 @@ instance Cube Cube3D where
         ]
 
 instance Cube Cube4D where
-    neighbours (Cube4D (x, y, z, w)) = HashSet.fromList [
+    neighbours (Cube4D (x, y, z, w)) = [
             Cube4D (x+dx, y+dy, z+dz, w+dw) | dx <- [-1, 0, 1],
                                               dy <- [-1, 0, 1],
                                               dz <- [-1, 0, 1],
@@ -36,27 +36,33 @@ instance Cube Cube4D where
                                               dx /= 0 || dy /= 0 || dz /= 0 || dw /= 0
         ]
 
-staysActive :: Cube c => State c -> c -> Bool
+neighboursWithout :: (Cube c, Hashable  c, Eq c) => State c -> c -> [c]
+neighboursWithout state c = filter (not . flip HashSet.member state) $ neighbours c
+
+addNeighbours ::  (Cube c, Hashable  c, Eq c) => c -> State c -> State c
+addNeighbours cube state = foldr HashSet.insert state $ neighboursWithout state cube
+
+staysActive :: (Cube c, Hashable  c, Eq c) => State c -> c -> Bool
 staysActive activeCubes cube = numActiveNeighbours == 2 || numActiveNeighbours == 3
     where
-        activeNeighbours = HashSet.intersection activeCubes $ neighbours cube
-        numActiveNeighbours = HashSet.size activeNeighbours
+        activeNeighbours = filter (`HashSet.member` activeCubes) $ neighbours cube
+        numActiveNeighbours = length activeNeighbours
 
-becomesActive :: Cube c => State c -> c -> Bool
+becomesActive :: (Cube c, Hashable  c, Eq c) => State c -> c -> Bool
 becomesActive activeCubes cube = numActiveNeighbours == 3
     where
-        activeNeighbours = HashSet.intersection activeCubes $ neighbours cube 
-        numActiveNeighbours = HashSet.size activeNeighbours
+        activeNeighbours = filter (`HashSet.member` activeCubes) $ neighbours cube
+        numActiveNeighbours = length activeNeighbours
 
-step :: Cube c => State c -> State c
+step :: (Cube c, Hashable  c, Eq c) => State c -> State c
 step activeCubes = HashSet.union stillActive newlyActive
     where
         stillActive = HashSet.filter (staysActive activeCubes) activeCubes 
         newlyActive = HashSet.filter (becomesActive activeCubes) inactiveNeighbours
         inactiveNeighbours = HashSet.difference allNeighbours activeCubes 
-        allNeighbours = HashSet.unions $ map neighbours $ HashSet.toList activeCubes
+        allNeighbours = HashSet.foldr addNeighbours HashSet.empty activeCubes
 
-run :: Cube c => Int -> State c -> State c
+run :: (Cube c, Hashable  c, Eq c) => Int -> State c -> State c
 run 0 = id
 run n = run (n-1) . step
 
