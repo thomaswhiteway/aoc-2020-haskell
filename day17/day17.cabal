@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 07d6637e93c251cb875489b01622b40b145c3f3d6de966c147b9013baa781df5
+-- hash: cfbddc330664553f23aba7e6eacf048a558debfa8f5e1c5ef3d02f1fe193fb9c
 
 name:           day17
 version:        0.1.0.0
@@ -29,5 +29,6 @@ executable day17-exe
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , hashable
     , unordered-containers
   default-language: Haskell2010
