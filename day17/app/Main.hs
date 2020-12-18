@@ -8,6 +8,14 @@ newtype Cube3D = Cube3D (Int, Int, Int) deriving (Eq, Hashable)
 newtype Cube4D = Cube4D (Int, Int, Int, Int) deriving (Eq, Hashable)
 type State c = HashSet c
 
+printGrid :: State Cube3D -> String
+printGrid state = unlines $ concat [["z=" ++ show z] ++ [[if Cube3D (x,y,z) `HashSet.member` state then '#' else '.' | x <- [minimum xs..maximum xs]] | y <- [minimum ys..maximum ys]] ++ [""] | z <- [minimum zs..maximum zs]]
+    where
+        xs = [x | Cube3D (x, _, _) <- HashSet.toList state]
+        ys = [y | Cube3D (_, y, _) <- HashSet.toList state]
+        zs = [z | Cube3D (_, _, z) <- HashSet.toList state]
+
+
 to4D :: Cube3D -> Cube4D
 to4D (Cube3D (x, y, z)) = Cube4D (x, y, z, 0)
 
