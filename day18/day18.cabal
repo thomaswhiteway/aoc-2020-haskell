@@ -1,0 +1,33 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: ab3d817258fb03ecf572bcc120a9e584e7c7755870b175dfe9a05e6fd5caaadd
+
+name:           day18
+version:        0.1.0.0
+homepage:       https://github.com/githubuser/day18#readme
+bug-reports:    https://github.com/githubuser/day18/issues
+author:         Thomas Whiteway
+maintainer:     thomas.whiteway@gmail.com
+copyright:      2020 Thomas Whiteway
+license:        BSD3
+build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/githubuser/day18
+
+executable day18-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_day18
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , parsec
+  default-language: Haskell2010
