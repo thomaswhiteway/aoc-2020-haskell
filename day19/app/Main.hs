@@ -8,29 +8,33 @@ import Data.Functor.Identity (Identity)
 import Data.Either (isRight)
 import Data.Maybe (fromJust, mapMaybe)
 import Data.List (intercalate)
+import Data.Bifunctor (second)
 
-data Rule = Literal Char | Ref Int | Sequence [Rule] | Either [Rule] deriving (Show)
-data ParseTree = Lit Char | Seq [ParseTree] | Eit [ParseTree] 
+data Rule = Literal Char | Ref Int | Sequence [Rule] | Either [Rule] deriving (Eq)
 
-multiCombinator :: ParseTree -> Bool
-multiCombinator (Lit _) = False
-multiCombinator (Eit ts) = any hasSeq ts
-multiCombinator (Seq ts) = any hasEither ts
+multiCombinator :: Rule -> Bool
+multiCombinator (Literal _) = False
+multiCombinator (Ref _) = False
+multiCombinator (Either ts) = any hasSequence ts
+multiCombinator (Sequence ts) = any hasEither ts
 
-hasEither :: ParseTree -> Bool
-hasEither (Lit _) = False
-hasEither (Seq ts) = any hasEither ts
-hasEither (Eit _) = True
+hasEither :: Rule -> Bool
+hasEither (Literal _) = False
+hasEither (Sequence ts) = any hasEither ts
+hasEither (Either _) = True
+hasEither (Ref _) = False
 
-hasSeq :: ParseTree -> Bool
-hasSeq (Lit _) = False
-hasSeq (Eit ts) = any hasSeq ts
-hasSeq (Seq _) = True
+hasSequence :: Rule -> Bool
+hasSequence (Literal _) = False
+hasSequence (Either ts) = any hasSequence ts
+hasSequence (Sequence _) = True
+hasSequence (Ref _) = False
 
-instance Show ParseTree where
-    show (Lit c)  = [c]
-    show (Seq ts) = concatMap (\t -> if multiCombinator t then  "(" ++ show t ++ ")" else show t) ts
-    show (Eit ts) = intercalate "|" $ map (\t -> if multiCombinator t then  "(" ++ show t ++ ")" else show t) ts
+instance Show Rule where
+    show (Literal c)  = [c]
+    show (Sequence ts) = concatMap (\t -> if multiCombinator t then  "(" ++ show t ++ ")" else show t) ts
+    show (Either ts) = intercalate "|" $ map (\t -> if multiCombinator t then  "(" ++ show t ++ ")" else show t) ts
+    show (Ref i) = "(" ++ show i ++ ")"
 
 literal = Literal <$> (char '"' *> letter <* char '"')
 reference = Ref . read <$> many1 digit
@@ -40,7 +44,7 @@ ruleNumber = read <$> many1 digit
 rule = do
     num <- ruleNumber
     string ": "
-    r <- Main.either
+    r <- fromJust . normalize <$> Main.either
     return (num, r)
 
 rules = rule `endBy` newline
@@ -54,35 +58,38 @@ input = do
     ms <- messages
     return (rs, ms)
 
+parseRule :: String -> (Int, Rule)
+parseRule text = case parse (rule <* eof) "" text of 
+    Left e -> error $ "Failed to parse rule: " ++ show e
+    Right r -> r
+
 parseInput :: String -> ([(Int, Rule)], [String])
 parseInput text = case parse input "" text of 
     Left e -> error $ "Failed to parse input: " ++ show e
     Right i -> i
 
-compile :: ParseTree -> ParsecT String u Identity String 
-compile (Seq children) = concat <$> mapM compile children
-compile (Eit children) = choice $ map (try . compile) children
-compile (Lit c)        = (:[]) <$> char c
-
-parseTree :: IntMap Rule -> Rule -> ParseTree
-parseTree rs (Ref index)         = parseTree rs (rs ! index)
-parseTree rs (Sequence children) = Seq $ map (parseTree rs) children
-parseTree rs (Either children)   = Eit $ map (parseTree rs) children
-parseTree rs (Literal c)         = Lit c
-
-normalize :: ParseTree -> Maybe ParseTree
-normalize (Lit c)  = Just $ Lit c
-normalize (Seq xs) = case mapMaybe normalize xs of 
+normalize :: Rule -> Maybe Rule
+normalize (Literal c)  = Just $ Literal c
+normalize (Ref i) = Just $ Ref i
+normalize (Sequence xs) = case mapMaybe normalize xs of 
     [] -> Nothing
     [x] -> Just x
-    xs' -> Just $ Seq xs'
-normalize (Eit xs) = case mapMaybe normalize xs of 
+    xs' -> Just $ Sequence xs'
+normalize (Either xs) = case mapMaybe normalize xs of 
     [] -> Nothing
     [x] -> Just x
-    xs' -> Just $ Eit xs'
+    xs' -> Just $ Either xs'
 
-isValid :: ParsecT String () Identity String -> String -> Bool
-isValid p text = isRight $ parse (p <* eof) "" text
+tryParse :: IntMap Rule -> Rule -> String -> [String]
+tryParse rules (Literal _)       []     = []
+tryParse rules (Literal c)       (x:xs) = [xs | c == x]
+tryParse rules (Ref i)           text   = tryParse rules (rules ! i) text
+tryParse rules (Sequence [])     text   = [text]
+tryParse rules (Sequence (x:xs)) text   = [rest' | rest <- tryParse rules x text, rest' <- tryParse rules (Sequence xs) rest]
+tryParse rules (Either xs)       text   = [rest | x <- xs, rest <- tryParse rules x text]
+
+isValid :: IntMap Rule -> Rule -> String -> Bool
+isValid rules rule text = elem [] $ tryParse rules rule text
 
 count :: (a -> Bool) -> [a] -> Int
 count f = length . filter f 
@@ -90,10 +97,13 @@ count f = length . filter f
 main :: IO ()
 main = do
     (rs, messages) <- fmap parseInput getContents
-    let indirectRules = IntMap.fromList rs
-    let pt = fromJust $ normalize $ parseTree indirectRules (indirectRules ! 0)
-    let p = compile pt
-    mapM_ (\m -> putStrLn $ m ++ " " ++ show (isValid p m)) messages
-    putStrLn $ show (count (isValid p) messages) ++ " messages are valid"
-
+    let rules = IntMap.fromList rs
+    let r = rules ! 0
+    mapM_ (\m -> putStrLn $ m ++ " " ++ show (isValid rules r m)) messages
+    putStrLn $ show (count (isValid rules r) messages) ++ " messages are valid"
+    let rules' = IntMap.fromList [ parseRule "8: 42 | 42 8"
+                                        , parseRule "11: 42 31 | 42 11 31"
+                                        ] `IntMap.union` rules
+    mapM_ (\m -> putStrLn $ m ++ " " ++ show (isValid rules' r m)) messages
+    putStrLn $ show (count (isValid rules' r) messages) ++ " messages are valid"
     
