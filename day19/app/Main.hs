@@ -6,11 +6,12 @@ import Data.IntMap.Lazy ( IntMap, (!) )
 import qualified Data.IntMap.Lazy as IntMap
 import Data.Functor.Identity (Identity)
 import Data.Either (isRight)
-import Data.Maybe (fromJust, mapMaybe)
-import Data.List (intercalate)
+import Data.Maybe (fromJust, mapMaybe, isJust)
+import Data.List (intercalate, find)
 import Data.Bifunctor (second)
 
 data Rule = Literal Char | Ref Int | Sequence [Rule] | Either [Rule] deriving (Eq)
+data ParseResult = Lit Char | Rf Int ParseResult | Seq [ParseResult] 
 
 multiCombinator :: Rule -> Bool
 multiCombinator (Literal _) = False
@@ -35,6 +36,11 @@ instance Show Rule where
     show (Sequence ts) = concatMap (\t -> if multiCombinator t then  "(" ++ show t ++ ")" else show t) ts
     show (Either ts) = intercalate "|" $ map (\t -> if multiCombinator t then  "(" ++ show t ++ ")" else show t) ts
     show (Ref i) = "(" ++ show i ++ ")"
+
+instance Show ParseResult where
+    show (Lit c)  = [c]
+    show (Seq ts) = concatMap show ts
+    show (Rf i r) = show i ++ ":(" ++ show r ++ ")"
 
 literal = Literal <$> (char '"' *> letter <* char '"')
 reference = Ref . read <$> many1 digit
@@ -80,16 +86,16 @@ normalize (Either xs) = case mapMaybe normalize xs of
     [x] -> Just x
     xs' -> Just $ Either xs'
 
-tryParse :: IntMap Rule -> Rule -> String -> [String]
+tryParse :: IntMap Rule -> Rule -> String -> [(ParseResult, String)]
 tryParse rules (Literal _)       []     = []
-tryParse rules (Literal c)       (x:xs) = [xs | c == x]
-tryParse rules (Ref i)           text   = tryParse rules (rules ! i) text
-tryParse rules (Sequence [])     text   = [text]
-tryParse rules (Sequence (x:xs)) text   = [rest' | rest <- tryParse rules x text, rest' <- tryParse rules (Sequence xs) rest]
+tryParse rules (Literal c)       (x:xs) = [(Lit c, xs) | c == x]
+tryParse rules (Ref i)           text   = [(Rf i r, rest) | (r, rest) <- tryParse rules (rules ! i) text]
+tryParse rules (Sequence [])     text   = [(Seq [], text)]
+tryParse rules (Sequence (x:xs)) text   = [(Seq (r:rs), rest') | (r, rest) <- tryParse rules x text, (Seq rs, rest') <- tryParse rules (Sequence xs) rest]
 tryParse rules (Either xs)       text   = [rest | x <- xs, rest <- tryParse rules x text]
 
-isValid :: IntMap Rule -> Rule -> String -> Bool
-isValid rules rule text = elem [] $ tryParse rules rule text
+isValid :: IntMap Rule -> Rule -> String -> Maybe ParseResult
+isValid rules rule text = fmap fst $ find (null . snd) $ tryParse rules rule text
 
 count :: (a -> Bool) -> [a] -> Int
 count f = length . filter f 
@@ -100,10 +106,10 @@ main = do
     let rules = IntMap.fromList rs
     let r = rules ! 0
     mapM_ (\m -> putStrLn $ m ++ " " ++ show (isValid rules r m)) messages
-    putStrLn $ show (count (isValid rules r) messages) ++ " messages are valid"
+    putStrLn $ show (count (isJust . isValid rules r) messages) ++ " messages are valid"
     let rules' = IntMap.fromList [ parseRule "8: 42 | 42 8"
                                         , parseRule "11: 42 31 | 42 11 31"
                                         ] `IntMap.union` rules
     mapM_ (\m -> putStrLn $ m ++ " " ++ show (isValid rules' r m)) messages
-    putStrLn $ show (count (isValid rules' r) messages) ++ " messages are valid"
+    putStrLn $ show (count (isJust . isValid rules' r) messages) ++ " messages are valid"
     
