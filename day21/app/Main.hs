@@ -6,7 +6,7 @@ import qualified Data.Map as Map
 import Data.Set(Set, (\\))
 import qualified Data.Set as Set
 import Data.List.Unique (uniq)
-import Debug.Trace (trace)
+import Data.List (intercalate, sort)
 
 ingredient = many1 letter
 allergen = many1 letter
@@ -54,3 +54,4 @@ main = do
     let knownSafeIngredients = allIngredients \\ potentialAllergenIngredients
     let occurrences = sum [ count (`Set.member` knownSafeIngredients) ingredients | (ingredients, _) <- foods ]
     print occurrences
+    putStrLn $ intercalate "," [ ingredient | (_, ingredient) <- sort [ (allergen, head $ Set.elems ingredients) | (allergen, ingredients) <- Map.toList potentialAllergens ]]
