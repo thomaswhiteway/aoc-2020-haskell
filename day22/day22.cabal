@@ -1,0 +1,33 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: ca5d0fe3e9c0e1cf9cad75d950d4b8cdcdc5c427b3f6fe050270f00756286b17
+
+name:           day22
+version:        0.1.0.0
+homepage:       https://github.com/githubuser/day22#readme
+bug-reports:    https://github.com/githubuser/day22/issues
+author:         Thomas Whiteway
+maintainer:     thomas.whiteway@gmail.com
+copyright:      2020 Thomas Whiteway
+license:        BSD3
+build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/githubuser/day22
+
+executable day22-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_day22
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , parsec
+  default-language: Haskell2010
