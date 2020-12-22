@@ -9,6 +9,7 @@ copyright:           "2020 Thomas Whiteway"
 dependencies:
 - base >= 4.7 && < 5
 - parsec
+- containers
 
 executables:
   day22-exe:
