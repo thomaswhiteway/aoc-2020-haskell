@@ -9,6 +9,8 @@ copyright:           "2020 Thomas Whiteway"
 dependencies:
 - base >= 4.7 && < 5
 - ghc
+- array
+- time
 
 executables:
   day23-exe:
