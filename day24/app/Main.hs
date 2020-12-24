@@ -6,6 +6,7 @@ import Data.Functor.Identity (Identity)
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Debug.Trace (trace)
+import Util (nTimes)
 
 type Position = (Int, Int)
 
@@ -27,6 +28,14 @@ direction = choice $ map (uncurry option) [ ("e",  East)
                                           , ("nw", NorthWest)
                                           , ("ne", NorthEast)
                                           ]
+
+allDirections :: [Direction] 
+allDirections = [ East
+                , SouthEast
+                , SouthWest
+                , West
+                , NorthWest
+                , NorthEast ]
 
 directions :: ParsecT String u Identity [Direction]
 directions = many1 direction
@@ -62,12 +71,36 @@ paintTile blackTiles directions
     where
         position = follow directions
  
-
 paintTiles :: [[Direction]] -> Set Position
 paintTiles = foldl paintTile Set.empty 
+
+count :: (a -> Bool) -> [a] -> Int
+count f = length . filter f
+
+neighbours :: Position -> [Position]
+neighbours pos = [ step pos d | d <- allDirections ]
+
+remainsBlack :: Set Position -> Position -> Bool
+remainsBlack blackTiles pos = numBlackNeighbours > 0 && numBlackNeighbours <= 2
+    where
+        numBlackNeighbours = count (`Set.member` blackTiles) (neighbours pos) 
+
+becomesBlack :: Set Position -> Position -> Bool
+becomesBlack blackTiles pos = numBlackNeighbours == 2
+    where
+        numBlackNeighbours = count (`Set.member` blackTiles) (neighbours pos) 
+
+afterDay :: Set Position -> Set Position
+afterDay blackTiles = remainingBlackTiles `Set.union` newBlackTiles
+    where
+        remainingBlackTiles = Set.filter (remainsBlack blackTiles) blackTiles
+        newBlackTiles = Set.filter (becomesBlack blackTiles) whiteTiles
+        whiteTiles = Set.unions [Set.fromList $ neighbours pos | pos <- Set.toList blackTiles ] `Set.difference` blackTiles
 
 main :: IO ()
 main = do
     instructions <- parseInstructions <$> getContents 
-    let tiles = paintTiles instructions
-    print $ Set.size tiles
+    let startTiles = paintTiles instructions
+    print $ Set.size startTiles
+    let endTiles= nTimes 100 afterDay startTiles
+    print $ Set.size endTiles

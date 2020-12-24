@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 328ed962fde0642619742623294eb55f35abdfbd2134a281e103846445a2c493
+-- hash: 44809b497749dca9889e3f781368937f7c79bdb9b6d2a167e2c1250ff3aed3a5
 
 name:           day24
 version:        0.1.0.0
@@ -30,5 +30,6 @@ executable day24-exe
   build-depends:
       base >=4.7 && <5
     , containers
+    , ghc
     , parsec
   default-language: Haskell2010
