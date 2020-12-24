@@ -1,0 +1,34 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 328ed962fde0642619742623294eb55f35abdfbd2134a281e103846445a2c493
+
+name:           day24
+version:        0.1.0.0
+homepage:       https://github.com/githubuser/day24#readme
+bug-reports:    https://github.com/githubuser/day24/issues
+author:         Thomas Whiteway
+maintainer:     thomas.whiteway@gmail.com
+copyright:      2020 Thomas Whiteway
+license:        BSD3
+build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/githubuser/day24
+
+executable day24-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_day24
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , containers
+    , parsec
+  default-language: Haskell2010
